@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AWS EC2 实例创建</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="/static/js/i18n.js"></script>
     <style>
         body {
             background-color: #f8f9fa;
@@ -25,8 +26,9 @@
 <body>
     <div class="container">
         <div class="card">
-            <div class="card-header bg-primary text-white">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                 <h3 class="mb-0">创建 AWS EC2 实例</h3>
+                <button id="langSwitch" class="btn btn-light btn-sm" onclick="setLanguage(getCurrentLanguage() === 'zh' ? 'en' : 'zh')">English</button>
             </div>
             <div class="card-body">
                 <form id="ec2Form">
@@ -64,6 +66,15 @@
                             <input class="form-check-input" type="radio" name="need_public_ip" id="need_public_ip_false" value="false">
                             <label class="form-check-label" for="need_public_ip_false">否</label>
                         </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="ami_id" class="form-label">操作系统版本</label>
+                        <select class="form-select" id="ami_id" name="ami_id" required>
+                            {% for os in os_versions %}
+                            <option value="{{ os.id }}" title="创建时间: {{ os.creation_date }}">{{ os.name }}</option>
+                            {% endfor %}
+                        </select>
                     </div>
 
                     <div class="mb-3">
@@ -130,6 +141,12 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Initialize page content with current language
+        document.addEventListener('DOMContentLoaded', function() {
+            updatePageContent();
+        });
+
+
         document.getElementById('ec2Form').addEventListener('submit', function(e) {
             e.preventDefault();
             

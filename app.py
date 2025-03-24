@@ -22,17 +22,9 @@ def create_ec2_instance(params):
                                     aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
                                     aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY'))
 
-        # Get the latest Amazon Linux 2 AMI
-        log_message("正在获取最新的Amazon Linux 2 AMI...")
-        response = ec2_client.describe_images(
-            Filters=[
-                {'Name': 'name', 'Values': ['amzn2-ami-hvm-*-x86_64-gp2']},
-                {'Name': 'state', 'Values': ['available']}
-            ],
-            Owners=['amazon']
-        )
-        ami_id = sorted(response['Images'], key=lambda x: x['CreationDate'], reverse=True)[0]['ImageId']
-        log_message(f"已选择AMI: {ami_id}")
+        # Use selected AMI
+        ami_id = params['ami_id']
+        log_message(f"使用选择的AMI: {ami_id}")
 
         # Get subnet from VPC
         log_message(f"正在从VPC {params['vpc_id']} 获取子网信息...")
@@ -101,6 +93,53 @@ def create_ec2_instance(params):
     except Exception as e:
         return {"error": str(e), "logs": logs}
 
+def get_aws_os_versions():
+    try:
+        # Initialize AWS client in a default region
+        ec2_client = boto3.client('ec2',
+                                region_name='us-east-1',
+                                aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
+                                aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY'))
+        
+        # Define OS filters
+        os_filters = [
+            {
+                'name': 'Amazon Linux 2',
+                'filters': [{'Name': 'name', 'Values': ['amzn2-ami-hvm-*-x86_64-gp2']}],
+                'owner': 'amazon'
+            },
+            {
+                'name': 'Ubuntu 22.04 LTS',
+                'filters': [{'Name': 'name', 'Values': ['ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*']}],
+                'owner': '099720109477'  # Canonical's AWS account ID
+            },
+            {
+                'name': 'Windows Server 2022',
+                'filters': [{'Name': 'name', 'Values': ['Windows_Server-2022-English-Full-Base-*']}],
+                'owner': 'amazon'
+            }
+        ]
+        
+        os_versions = []
+        for os_info in os_filters:
+            response = ec2_client.describe_images(
+                Filters=os_info['filters'],
+                Owners=[os_info['owner']]
+            )
+            if response['Images']:
+                # Get the latest version by creation date
+                latest_image = sorted(response['Images'], key=lambda x: x['CreationDate'], reverse=True)[0]
+                os_versions.append({
+                    'id': latest_image['ImageId'],
+                    'name': os_info['name'],
+                    'creation_date': latest_image['CreationDate']
+                })
+        
+        return os_versions
+    except Exception as e:
+        print(f"Error getting AWS OS versions: {str(e)}")
+        return []
+
 def get_aws_regions():
     try:
         # Initialize AWS client in a default region
@@ -126,7 +165,8 @@ def get_aws_regions():
 @app.route('/')
 def index():
     regions = get_aws_regions()
-    return render_template('index.html', regions=regions)
+    os_versions = get_aws_os_versions()
+    return render_template('index.html', regions=regions, os_versions=os_versions)
 
 @app.route('/create_instance', methods=['POST'])
 def create_instance():
@@ -141,7 +181,8 @@ def create_instance():
             'owner': request.form['owner'],
             'team': request.form['team'],
             'application_name': request.form['application_name'],
-            'environment': request.form['environment']
+            'environment': request.form['environment'],
+            'ami_id': request.form['ami_id']
         }
         
         result = create_ec2_instance(params)
