@@ -1,0 +1,19 @@
+image: python:3.9
+
+variables:
+  EC2_NAME: ""
+  EC2_REGION: ""
+  EC2_VOLUME_SIZE: ""
+  EC2_VPC_ID: ""
+  EC2_PUBLIC_IP: ""
+  EC2_INSTANCE_TYPE: ""
+
+create_ec2:
+  stage: deploy
+  script:
+    - pip install -r requirements.txt
+    - python create_ec2.py
+  rules:
+    - when: manual
+  tags:
+    - aws 

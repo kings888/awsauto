@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS EC2 实例创建</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 800px;
+            margin-top: 30px;
+        }
+        .card {
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        .result-section {
+            display: none;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">创建 AWS EC2 实例</h3>
+            </div>
+            <div class="card-body">
+                <form id="ec2Form">
+                    <div class="mb-3">
+                        <label for="instance_name" class="form-label">实例名称</label>
+                        <input type="text" class="form-control" id="instance_name" name="instance_name" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="region" class="form-label">AWS 区域</label>
+                        <select class="form-select" id="region" name="region" required>
+                            <option value="us-east-1">US East (N. Virginia)</option>
+                            <option value="us-west-2">US West (Oregon)</option>
+                            <option value="ap-northeast-1">Asia Pacific (Tokyo)</option>
+                            <option value="ap-southeast-1">Asia Pacific (Singapore)</option>
+                            <option value="eu-west-1">Europe (Ireland)</option>
+                            <option value="cn-north-1">China (Beijing)</option>
+                            <option value="cn-northwest-1">China (Ningxia)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="volume_size" class="form-label">硬盘大小 (GB)</label>
+                        <input type="number" class="form-control" id="volume_size" name="volume_size" min="8" value="30" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="vpc_id" class="form-label">VPC ID</label>
+                        <input type="text" class="form-control" id="vpc_id" name="vpc_id" placeholder="vpc-xxxxxx" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">是否需要公网 IP</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="need_public_ip" id="need_public_ip_true" value="true" checked>
+                            <label class="form-check-label" for="need_public_ip_true">是</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="need_public_ip" id="need_public_ip_false" value="false">
+                            <label class="form-check-label" for="need_public_ip_false">否</label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="instance_type" class="form-label">实例类型</label>
+                        <select class="form-select" id="instance_type" name="instance_type" required>
+                            <option value="t2.micro">t2.micro (1 vCPU, 1 GiB RAM)</option>
+                            <option value="t2.small">t2.small (1 vCPU, 2 GiB RAM)</option>
+                            <option value="t2.medium">t2.medium (2 vCPU, 4 GiB RAM)</option>
+                            <option value="t3.micro">t3.micro (2 vCPU, 1 GiB RAM)</option>
+                            <option value="t3.small">t3.small (2 vCPU, 2 GiB RAM)</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">创建实例</button>
+                </form>
+
+                <div id="resultSection" class="result-section">
+                    <div class="alert alert-success">
+                        <h4>创建成功！</h4>
+                        <p><strong>实例 ID：</strong> <span id="instanceId"></span></p>
+                        <p><strong>状态：</strong> <span id="instanceState"></span></p>
+                        <p id="publicIpSection" style="display: none">
+                            <strong>公网 IP：</strong> <span id="publicIp"></span>
+                        </p>
+                    </div>
+                </div>
+
+                <div id="errorSection" class="result-section alert alert-danger">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('ec2Form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Hide previous results
+            document.getElementById('resultSection').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'none';
+            
+            // Get form data
+            const formData = new FormData(this);
+            
+            // Send request
+            fetch('/create_instance', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    // Show error
+                    const errorSection = document.getElementById('errorSection');
+                    errorSection.textContent = '错误：' + data.error;
+                    errorSection.style.display = 'block';
+                } else {
+                    // Show success
+                    document.getElementById('instanceId').textContent = data.instance_id;
+                    document.getElementById('instanceState').textContent = data.state;
+                    
+                    if (data.public_ip) {
+                        document.getElementById('publicIp').textContent = data.public_ip;
+                        document.getElementById('publicIpSection').style.display = 'block';
+                    }
+                    
+                    document.getElementById('resultSection').style.display = 'block';
+                }
+            })
+            .catch(error => {
+                const errorSection = document.getElementById('errorSection');
+                errorSection.textContent = '错误：' + error.message;
+                errorSection.style.display = 'block';
+            });
+        });
+    </script>
+</body>
+</html> 
