@@ -32,11 +32,18 @@ def create_ec2_instance():
         ami_id = sorted(response['Images'], key=lambda x: x['CreationDate'], reverse=True)[0]['ImageId']
 
         # Get subnet from VPC
-        subnets = list(ec2_resource.vpc(vpc_id).subnets.all())
-        if not subnets:
+        response = ec2_client.describe_subnets(
+            Filters=[
+                {
+                    'Name': 'vpc-id',
+                    'Values': [vpc_id]
+                }
+            ]
+        )
+        if not response['Subnets']:
             print(f"Error: No subnets found in VPC {vpc_id}")
             sys.exit(1)
-        subnet_id = subnets[0].id
+        subnet_id = response['Subnets'][0]['SubnetId']
 
         # Create instance
         instance = ec2_resource.create_instances(
@@ -80,4 +87,4 @@ def create_ec2_instance():
         sys.exit(1)
 
 if __name__ == "__main__":
-    create_ec2_instance() 
+    create_ec2_instance()

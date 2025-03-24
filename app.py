@@ -28,10 +28,17 @@ def create_ec2_instance(params):
         ami_id = sorted(response['Images'], key=lambda x: x['CreationDate'], reverse=True)[0]['ImageId']
 
         # Get subnet from VPC
-        subnets = list(ec2_resource.vpc(params['vpc_id']).subnets.all())
-        if not subnets:
+        response = ec2_client.describe_subnets(
+            Filters=[
+                {
+                    'Name': 'vpc-id',
+                    'Values': [params['vpc_id']]
+                }
+            ]
+        )
+        if not response['Subnets']:
             return {"error": f"No subnets found in VPC {params['vpc_id']}"}
-        subnet_id = subnets[0].id
+        subnet_id = response['Subnets'][0]['SubnetId']
 
         # Create instance
         instance = ec2_resource.create_instances(
@@ -78,9 +85,32 @@ def create_ec2_instance(params):
     except Exception as e:
         return {"error": str(e)}
 
+def get_aws_regions():
+    try:
+        # Initialize AWS client in a default region
+        ec2_client = boto3.client('ec2',
+                                region_name='us-east-1',
+                                aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
+                                aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY'))
+        
+        # Get all regions
+        response = ec2_client.describe_regions()
+        regions = [{
+            'id': region['RegionName'],
+            'name': region['RegionName']
+        } for region in response['Regions']]
+        
+        # Sort regions by name
+        regions.sort(key=lambda x: x['name'])
+        return regions
+    except Exception as e:
+        print(f"Error getting AWS regions: {str(e)}")
+        return []
+
 @app.route('/')
 def index():
-    return render_template('index.html')
+    regions = get_aws_regions()
+    return render_template('index.html', regions=regions)
 
 @app.route('/create_instance', methods=['POST'])
 def create_instance():
@@ -100,4 +130,4 @@ def create_instance():
         return jsonify({"error": str(e)})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', debug=True, port=5000) 
+    app.run(host='0.0.0.0', debug=True, port=5000)

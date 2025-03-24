@@ -38,13 +38,9 @@
                     <div class="mb-3">
                         <label for="region" class="form-label">AWS 区域</label>
                         <select class="form-select" id="region" name="region" required>
-                            <option value="us-east-1">US East (N. Virginia)</option>
-                            <option value="us-west-2">US West (Oregon)</option>
-                            <option value="ap-northeast-1">Asia Pacific (Tokyo)</option>
-                            <option value="ap-southeast-1">Asia Pacific (Singapore)</option>
-                            <option value="eu-west-1">Europe (Ireland)</option>
-                            <option value="cn-north-1">China (Beijing)</option>
-                            <option value="cn-northwest-1">China (Ningxia)</option>
+                            {% for region in regions %}
+                            <option value="{{ region.id }}">{{ region.name }}</option>
+                            {% endfor %}
                         </select>
                     </div>
 
@@ -146,4 +142,4 @@
         });
     </script>
 </body>
-</html> 
+</html>
