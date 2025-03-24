@@ -77,8 +77,39 @@
                         </select>
                     </div>
 
+                    <div class="mb-3">
+                        <label for="owner" class="form-label">Owner</label>
+                        <input type="text" class="form-control" id="owner" name="owner" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="team" class="form-label">Team</label>
+                        <input type="text" class="form-control" id="team" name="team" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="application_name" class="form-label">Application Name</label>
+                        <input type="text" class="form-control" id="application_name" name="application_name" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="environment" class="form-label">Environment</label>
+                        <select class="form-select" id="environment" name="environment" required>
+                            <option value="NPD">NPD</option>
+                            <option value="PRD">PRD</option>
+                            <option value="TEST">TEST</option>
+                        </select>
+                    </div>
+
                     <button type="submit" class="btn btn-primary">创建实例</button>
                 </form>
+
+                <div id="logSection" class="result-section">
+                    <div class="alert alert-info">
+                        <h4>创建进度</h4>
+                        <div id="logContent" style="max-height: 200px; overflow-y: auto;"></div>
+                    </div>
+                </div>
 
                 <div id="resultSection" class="result-section">
                     <div class="alert alert-success">
@@ -116,6 +147,14 @@
             })
             .then(response => response.json())
             .then(data => {
+                // Show logs
+                const logContent = document.getElementById('logContent');
+                if (data.logs) {
+                    logContent.innerHTML = data.logs.map(log => `<p>${log}</p>`).join('');
+                    document.getElementById('logSection').style.display = 'block';
+                    logContent.scrollTop = logContent.scrollHeight;
+                }
+
                 if (data.error) {
                     // Show error
                     const errorSection = document.getElementById('errorSection');
