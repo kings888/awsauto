@@ -147,6 +147,27 @@
         });
 
 
+        // 当区域选择改变时重新加载AMI列表
+        document.getElementById('region').addEventListener('change', function() {
+            const region = this.value;
+            fetch(`/get_ami_list?region=${region}`)
+                .then(response => response.json())
+                .then(data => {
+                    const amiSelect = document.getElementById('ami_id');
+                    amiSelect.innerHTML = '';
+                    data.forEach(os => {
+                        const option = document.createElement('option');
+                        option.value = os.id;
+                        option.title = `创建时间: ${os.creation_date}`;
+                        option.textContent = os.name;
+                        amiSelect.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading AMI list:', error);
+                });
+        });
+
         document.getElementById('ec2Form').addEventListener('submit', function(e) {
             e.preventDefault();
             

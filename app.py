@@ -93,11 +93,11 @@ def create_ec2_instance(params):
     except Exception as e:
         return {"error": str(e), "logs": logs}
 
-def get_aws_os_versions():
+def get_aws_os_versions(region='us-east-1'):
     try:
-        # Initialize AWS client in a default region
+        # Initialize AWS client with specified region
         ec2_client = boto3.client('ec2',
-                                region_name='us-east-1',
+                                region_name=region,
                                 aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
                                 aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY'))
         
@@ -161,6 +161,12 @@ def get_aws_regions():
     except Exception as e:
         print(f"Error getting AWS regions: {str(e)}")
         return []
+
+@app.route('/get_ami_list')
+def get_ami_list():
+    region = request.args.get('region', 'us-east-1')
+    os_versions = get_aws_os_versions(region)
+    return jsonify(os_versions)
 
 @app.route('/')
 def index():
